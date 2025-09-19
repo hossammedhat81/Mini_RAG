@@ -1,5 +1,6 @@
 from fastapi import FastAPI , APIRouter
 import os
+from helpers.config import get_settings
 
 base_router = APIRouter(
     prefix="/api/v1",  # Set a global prefix for all routes
@@ -8,9 +9,11 @@ base_router = APIRouter(
 
 
 @base_router.get("/")        #decorator required to tell FastAPI that the function immediately below is in charge of handling requests that go to the path "/welcome" using the GET HTTP method.
-def welcome():
-    app_name = os.getenv("APP_NAME")
-    app_version = os.getenv("APP_VERSION")
+async def welcome():
+    app_settings = get_settings()
+    app_name = app_settings.APP_NAME
+    app_version = app_settings.APP_VERSION
+
     return {
         "app_name": app_name,
         "app_version": app_version,
