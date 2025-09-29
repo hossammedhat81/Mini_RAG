@@ -109,14 +109,10 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
 
     project_files_ids = {}
     if process_request.file_id:
-        # Try by ObjectId first (the upload returns ObjectId)
-        asset_record = await asset_model.get_asset_by_id(process_request.file_id)
-        # Fallback to name match within this project
-        if asset_record is None:
-            asset_record = await asset_model.get_asset_record(
-                asset_project_id=project.id,
-                asset_name=process_request.file_id
-            )
+        asset_record = await asset_model.get_asset_record(
+            asset_project_id=project.id,
+            asset_name=process_request.file_id
+        )
 
         if asset_record is None:
             return JSONResponse(
