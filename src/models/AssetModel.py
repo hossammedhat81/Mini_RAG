@@ -58,17 +58,5 @@ class AssetModel(BaseDataModel):
         
         return None
 
-    async def get_asset_by_id(self, asset_id: object):
-        try:
-            object_id = ObjectId(asset_id) if isinstance(asset_id, str) else asset_id
-        except Exception:
-            return None
-        record = await self.collection.find_one({
-            "_id": object_id
-        })
-        if record:
-            return Asset(**record)
-        return None
-
 
     
