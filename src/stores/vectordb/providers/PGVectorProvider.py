@@ -35,7 +35,6 @@ class PGVectorProvider(VectorDBInterface):
                 await session.execute(sql_text(
                     "CREATE EXTENSION IF NOT EXISTS vector"
                 ))
-                await session.commit()
 
     async def disconnect(self):
         pass
