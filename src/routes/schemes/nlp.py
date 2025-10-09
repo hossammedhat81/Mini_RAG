@@ -7,3 +7,8 @@ class PushRequest(BaseModel):
 class SearchRequest(BaseModel):
     text: str
     limit: Optional[int] = 5
+
+class WebSearchRequest(BaseModel):
+    text: str
+    max_results: Optional[int] = 3
+
