@@ -4,6 +4,13 @@ from stores.llm.LLMEnums import DocumentTypeEnum
 from typing import List
 import json
 
+# Web search support
+try:
+    from duckduckgo_search import DDGS
+    SEARCH_AVAILABLE = True
+except ImportError:
+    SEARCH_AVAILABLE = False
+
 class NLPController(BaseController):
 
     def __init__(self, vectordb_client, generation_client, 
@@ -138,4 +145,99 @@ class NLPController(BaseController):
         )
 
         return answer, full_prompt, chat_history
+
+    def search_web(self, query: str, max_results: int = 3):
+        """Search internet using DuckDuckGo (no API key needed)"""
+        if not SEARCH_AVAILABLE:
+            return {
+                "success": False,
+                "error": "Web search not available. Install: pip install duckduckgo-search"
+            }
+        
+        try:
+            # Use backend='api' to avoid rate limiting issues
+            # Try multiple times with different backends if rate limited
+            backends = ['api', 'html', 'lite']
+            last_error = None
+            
+            for backend in backends:
+                try:
+                    with DDGS() as ddgs:
+                        results = list(ddgs.text(
+                            query, 
+                            max_results=max_results,
+                            backend=backend
+                        ))
+                    
+                    if results:
+                        return {
+                            "success": True,
+                            "results": results,
+                            "count": len(results)
+                        }
+                except Exception as e:
+                    last_error = str(e)
+                    continue
+            
+            # If all backends fail, return error
+            return {
+                "success": False,
+                "error": f"All search backends failed. Last error: {last_error}"
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    def answer_with_web_search(self, query: str, max_results: int = 3):
+        """Generate answer using web search results"""
+        import logging
+        logger = logging.getLogger('uvicorn.error')
+        
+        logger.info(f"Starting web search for query: {query}")
+        search_results = self.search_web(query, max_results)
+        
+        if not search_results.get("success"):
+            error = search_results.get("error", "Unknown error")
+            logger.error(f"Web search failed: {error}")
+            return None, None
+        
+        logger.info(f"Web search successful, found {len(search_results['results'])} results")
+        
+        # Format search results for LLM
+        results_text = "\n\n".join([
+            f"Source {i+1}: {r['title']}\n{r['body']}\nURL: {r['href']}"
+            for i, r in enumerate(search_results["results"])
+        ])
+        
+        # Generate answer from search results
+        system_prompt = "You are a helpful assistant. Answer the question using the provided web search results."
+        
+        full_prompt = f"""Web Search Results:
+{results_text}
+
+Question: {query}
+
+Answer the question using the information from the search results above. Include relevant URLs."""
+        
+        logger.info("Generating LLM answer from search results...")
+        
+        chat_history = [
+            self.generation_client.construct_prompt(
+                prompt=system_prompt,
+                role=self.generation_client.enums.SYSTEM.value,
+            )
+        ]
+        
+        answer = self.generation_client.generate_text(
+            prompt=full_prompt,
+            chat_history=chat_history
+        )
+        
+        logger.info(f"LLM answer generated, length: {len(answer) if answer else 0}")
+        
+        return answer, search_results["results"]
+
 

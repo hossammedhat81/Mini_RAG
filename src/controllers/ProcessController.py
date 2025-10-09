@@ -6,6 +6,7 @@ from langchain_community.document_loaders import PyMuPDFLoader
 from models import ProcessingEnum
 from typing import List
 from dataclasses import dataclass
+import pandas as pd
 
 @dataclass
 class Document:
@@ -42,8 +43,46 @@ class ProcessController(BaseController):
         
         return None
 
-    def get_file_content(self, file_id: str):
+    def get_csv_content_as_text(self, file_id: str):
+        """Convert CSV to markdown table for text processing"""
+        file_path = os.path.join(self.project_path, file_id)
+        
+        if not os.path.exists(file_path):
+            return None
+        
+        try:
+            # Read CSV
+            df = pd.read_csv(file_path)
+            
+            # Convert to markdown table (LLM-friendly format)
+            markdown_table = df.to_markdown(index=False)
+            
+            # Add metadata header
+            csv_info = f"""# CSV Dataset: {file_id}
+Rows: {len(df)}
+Columns: {', '.join(df.columns.tolist())}
 
+## Data:
+{markdown_table}
+"""
+            # Return in same format as TextLoader
+            return [Document(
+                page_content=csv_info,
+                metadata={"source": file_id, "type": "csv"}
+            )]
+            
+        except Exception as e:
+            print(f"Error reading CSV {file_id}: {e}")
+            return None
+
+    def get_file_content(self, file_id: str):
+        
+        # Check if CSV first
+        file_ext = self.get_file_extension(file_id=file_id)
+        if file_ext == ".csv":
+            return self.get_csv_content_as_text(file_id=file_id)
+
+        # Use existing loaders for PDF/TXT
         loader = self.get_file_loader(file_id=file_id)
         if loader:
             return loader.load()

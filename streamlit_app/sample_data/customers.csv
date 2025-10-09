@@ -1,0 +1,11 @@
+customer_id,name,phone,email,city,age,registration_date
+1,Ahmed Mohamed,01112345678,ahmed@example.com,Cairo,28,2024-01-15
+2,Fatma Hassan,01123456789,fatma@example.com,Alexandria,34,2024-01-20
+3,Mohamed Ali,01134567890,mohamed@example.com,Giza,25,2024-02-01
+4,Sara Ibrahim,01145678901,sara@example.com,Cairo,31,2024-02-10
+5,Khaled Mahmoud,01156789012,khaled@example.com,Mansoura,42,2024-02-15
+6,Nour Ahmed,01167890123,nour@example.com,Alexandria,29,2024-03-01
+7,Omar Sayed,01178901234,omar@example.com,Cairo,36,2024-03-05
+8,Dina Youssef,01189012345,dina@example.com,Tanta,27,2024-03-10
+9,Hassan Adel,01190123456,hassan@example.com,Cairo,33,2024-03-15
+10,Mona Kamal,01101234567,mona@example.com,Alexandria,39,2024-03-20

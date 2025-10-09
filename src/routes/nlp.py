@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, status, Request
 from fastapi.responses import JSONResponse
-from routes.schemes.nlp import PushRequest, SearchRequest
+from routes.schemes.nlp import PushRequest, SearchRequest, WebSearchRequest
 from models.ProjectModel import ProjectModel
 from models.ChunkModel import ChunkModel
 from controllers import NLPController
@@ -204,3 +204,48 @@ async def answer_rag(request: Request, project_id: int, search_request: SearchRe
             "chat_history": chat_history
         }
     )
+
+@nlp_router.post("/search/web")
+async def web_search(request: Request, search_request: WebSearchRequest):
+    """Search internet using DuckDuckGo"""
+    
+    try:
+        nlp_controller = NLPController(
+            vectordb_client=request.app.vectordb_client,
+            generation_client=request.app.generation_client,
+            embedding_client=request.app.embedding_client,
+            template_parser=request.app.template_parser,
+        )
+        
+        answer, sources = nlp_controller.answer_with_web_search(
+            query=search_request.text,
+            max_results=search_request.max_results
+        )
+        
+        if not answer:
+            logger.error("Web search returned no answer")
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "signal": "WEB_SEARCH_ERROR",
+                    "error": "Failed to perform web search - no answer generated"
+                }
+            )
+        
+        return JSONResponse(
+            content={
+                "signal": "WEB_SEARCH_SUCCESS",
+                "answer": answer,
+                "sources": sources
+            }
+        )
+    except Exception as e:
+        logger.error(f"Web search exception: {str(e)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "signal": "WEB_SEARCH_ERROR",
+                "error": f"Exception during web search: {str(e)}"
+            }
+        )
+
